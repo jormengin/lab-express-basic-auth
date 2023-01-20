@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const User = require('../models/User.model');
 
-/* GET home page */
+// SIGNUP ROUTES AND FORM
 router.get("/signup", (req, res, next) => {
   res.render("auth/signup");
 });
@@ -40,9 +40,35 @@ router.post('/signup', async function (req, res, next) {
       next(error)
     }
   });
-
-  
-
-
+//LOG IN ROUTES AND FORM
+  router.get("/login", (req, res, next) => {
+    res.render("auth/login");
+  });
+// COMO SE CONECTA EL FORM DEL HBS CON ESA FUNCION? route handler?
+  router.post('/login', async function (req, res, next) {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      res.render('auth/login', { error: 'Introduce email and password to log in' });
+      return;
+    }
+    try {
+      const userInDB = await User.findOne({ email: email });
+      if (!userInDB) {
+        res.render('auth/login', { error: `There are no users by ${email}` });
+        return;
+      } else {
+        const passwordMatch = await bcrypt.compare(password, userInDB.hashedPassword);
+        if (passwordMatch) {
+          res.render('auth/signup', userInDB);
+        console.log('login succesful');
+        } else {
+          res.render('auth/login', { error: 'Unable to authenticate user' });
+          return;
+        }
+      }
+    } catch (error) {
+      next(error)
+    }
+  });
 
 module.exports = router;
