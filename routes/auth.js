@@ -2,6 +2,7 @@ const router = require("express").Router();
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const User = require('../models/User.model');
+const isLoggedIn = require("../middlewares");
 
 // SIGNUP ROUTES AND FORM
 router.get("/signup", (req, res, next) => {
@@ -59,8 +60,8 @@ router.post('/signup', async function (req, res, next) {
       } else {
         const passwordMatch = await bcrypt.compare(password, userInDB.hashedPassword);
         if (passwordMatch) {
-          res.render('auth/signup', userInDB);
-        console.log('login succesful');
+          req.session.currentUser = userInDB;
+          res.render('private', userInDB);
         } else {
           res.render('auth/login', { error: 'Unable to authenticate user' });
           return;
@@ -70,5 +71,16 @@ router.post('/signup', async function (req, res, next) {
       next(error)
     }
   });
+
+/* GET logout */
+router.get("/logout", isLoggedIn, (req, res, next) => {
+  req.session.destroy((err) => {
+    if (err) {
+      next(err);
+    } else {
+      res.redirect("/");
+    }
+  });
+});
 
 module.exports = router;

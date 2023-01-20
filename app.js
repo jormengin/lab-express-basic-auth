@@ -13,8 +13,10 @@ const express = require('express');
 // https://www.npmjs.com/package/hbs
 const hbs = require('hbs');
 
-const app = express();
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 
+const app = express();
 // ℹ️ This function is getting exported from the config folder. It runs most middlewares
 require('./config')(app);
 
@@ -28,7 +30,25 @@ app.locals.title = `${capitalized(projectName)}- Generated with Ironlauncher`;
 const index = require('./routes/index');
 const authRouter = require('./routes/auth')
 
-
+//for deployment . this function throws the error in the console. Cannot init client
+app.set('trust proxy', 1);
+app.use(
+  session({
+    name: 'lab-express-basic-auth',
+    secret: process.env.SESSION_SECRET,
+    resave: true,
+    saveUninitialized: false,
+    cookie: {
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 2592000000 // 30 days in milliseconds
+    },
+    store: MongoStore.create({
+      mongoUrl: "mongodb://localhost/lab-express-basic-auth"
+    })
+  })
+)
 app.use('/', index);
 app.use('/auth', authRouter)
 // ❗ To handle errors. Routes that don't exist or errors that you handle in specific routes
